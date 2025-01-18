@@ -82,9 +82,9 @@ const downloadShortButton = document.getElementById('downloadShort');
 const overlaySelection = document.getElementById('overlaySelection');
 
 const overlayImages = {
-    camera1: "https://raw.githubusercontent.com/iweiu1005/video-overlay/main/assets/Png%20Camera%201.png",
-    camera2: "https://raw.githubusercontent.com/iweiu1005/video-overlay/main/assets/Png%20Camera%203.png",
-    camera3: "https://raw.githubusercontent.com/iweiu1005/video-overlay/main/assets/Png%20Camera%202.png"
+    camera1: "https://raw.githubusercontent.com/iweiu1005/png-overlay/main/img/Png%20Camera%201.png",
+    camera2: "https://raw.githubusercontent.com/iweiu1005/png-overlay/main/img/Png%20Camera%202.png",
+    camera3: "https://raw.githubusercontent.com/iweiu1005/png-overlay/main/img/Png%20Camera%203.png"
 };
 
 let currentVideo = null; // Store the uploaded video
@@ -166,14 +166,13 @@ uploadInput.addEventListener('change', (event) => {
 overlaySelection.addEventListener('change', updateOverlay);
 
 downloadButton.addEventListener('click', () => {
-    if (!currentVideo) return;
-
     const link = document.createElement('a');
     link.download = 'video-overlay.webm';
-    const chunks = [];
-    
-    const stream = canvas.captureStream(30); // FPS
+
+    // Create a stream from the canvas and save it
+    const stream = canvas.captureStream(30); // 30 FPS
     const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    const chunks = [];
 
     recorder.ondataavailable = (event) => chunks.push(event.data);
     recorder.onstop = () => {
@@ -184,30 +183,17 @@ downloadButton.addEventListener('click', () => {
     };
 
     recorder.start();
-
-    // Render each frame
-    function renderAndRecord() {
-        if (videoElement.paused || videoElement.ended) {
-            recorder.stop();
-            return;
-        }
-        updateOverlay(); // Call overlay function for each frame
-        requestAnimationFrame(renderAndRecord);
-    }
-    
-    videoElement.play();
-    renderAndRecord();
+    setTimeout(() => recorder.stop(), currentVideo.duration * 1000); // Stop after video duration
 });
 
 downloadShortButton.addEventListener('click', () => {
-    if (!currentVideo) return;
-
     const link = document.createElement('a');
     link.download = 'video-overlay-short.webm';
-    const chunks = [];
-    
-    const stream = canvas.captureStream(30); // FPS
+
+    // Create a stream from the canvas and save it
+    const stream = canvas.captureStream(30); // 30 FPS
     const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    const chunks = [];
 
     recorder.ondataavailable = (event) => chunks.push(event.data);
     recorder.onstop = () => {
@@ -218,21 +204,8 @@ downloadShortButton.addEventListener('click', () => {
     };
 
     recorder.start();
-
-    function renderAndRecordShort() {
-        if (videoElement.currentTime >= 3 || videoElement.ended) {
-            recorder.stop();
-            return;
-        }
-        updateOverlay();
-        requestAnimationFrame(renderAndRecordShort);
-    }
-
-    videoElement.currentTime = 0;
-    videoElement.play();
-    renderAndRecordShort();
+    setTimeout(() => recorder.stop(), 3000); // Stop after 3 seconds
 });
-
 </script>
 </body>
 </html>
