@@ -166,13 +166,14 @@ uploadInput.addEventListener('change', (event) => {
 overlaySelection.addEventListener('change', updateOverlay);
 
 downloadButton.addEventListener('click', () => {
+    if (!currentVideo) return;
+
     const link = document.createElement('a');
     link.download = 'video-overlay.webm';
-
-    // Create a stream from the canvas and save it
-    const stream = canvas.captureStream(30); // 30 FPS
-    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
     const chunks = [];
+    
+    const stream = canvas.captureStream(30); // FPS
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
 
     recorder.ondataavailable = (event) => chunks.push(event.data);
     recorder.onstop = () => {
@@ -183,17 +184,30 @@ downloadButton.addEventListener('click', () => {
     };
 
     recorder.start();
-    setTimeout(() => recorder.stop(), currentVideo.duration * 1000); // Stop after video duration
+
+    // Render each frame
+    function renderAndRecord() {
+        if (videoElement.paused || videoElement.ended) {
+            recorder.stop();
+            return;
+        }
+        updateOverlay(); // Call overlay function for each frame
+        requestAnimationFrame(renderAndRecord);
+    }
+    
+    videoElement.play();
+    renderAndRecord();
 });
 
 downloadShortButton.addEventListener('click', () => {
+    if (!currentVideo) return;
+
     const link = document.createElement('a');
     link.download = 'video-overlay-short.webm';
-
-    // Create a stream from the canvas and save it
-    const stream = canvas.captureStream(30); // 30 FPS
-    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
     const chunks = [];
+    
+    const stream = canvas.captureStream(30); // FPS
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
 
     recorder.ondataavailable = (event) => chunks.push(event.data);
     recorder.onstop = () => {
@@ -204,8 +218,21 @@ downloadShortButton.addEventListener('click', () => {
     };
 
     recorder.start();
-    setTimeout(() => recorder.stop(), 3000); // Stop after 3 seconds
+
+    function renderAndRecordShort() {
+        if (videoElement.currentTime >= 3 || videoElement.ended) {
+            recorder.stop();
+            return;
+        }
+        updateOverlay();
+        requestAnimationFrame(renderAndRecordShort);
+    }
+
+    videoElement.currentTime = 0;
+    videoElement.play();
+    renderAndRecordShort();
 });
+
 </script>
 </body>
 </html>
