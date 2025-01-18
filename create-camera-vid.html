@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link href="https://uploadkon.ir/uploads/878b23_24image-249.png" rel="shortcut icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;900&display=swap" rel="stylesheet">
+<meta content="width=device-width, initial-scale=1" name="viewport" />
+<meta charset="UTF-8">
+<title>Video Adjustment for PNG Camera</title>
+<style>
+    body {
+        font-family: Rubik, Arial, sans-serif;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 515px;
+        margin: 15px auto;
+        background: #d2d2d2;
+    }
+    h1 {
+        font-size: larger;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        margin-top: 20px;
+        width: 80%;
+    }
+    .box {
+        width: 80%;
+        border-radius: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: #fff;
+        padding: 15px 10px;
+        box-shadow: 0px 10px 36px -16px #bbb;
+        border: 2px solid #bfbfbf;
+    }
+    label {
+        margin-bottom: 10px;
+    }
+    select {
+        margin-bottom: 15px;
+    }
+    @media (max-width: 850px) {
+        body {
+            max-width: 100%;
+        }
+        .box {
+            max-width: 80%;
+        }
+    }
+</style>
+</head>
+<body>
+<div class="box">
+    <h1>Video Adjustment for PNG Camera</h1>
+    <div style="direction: ltr;">
+        <label for="overlaySelection">Select Overlay:</label>
+        <select id="overlaySelection">
+            <option value="camera1">Overlay 1</option>
+            <option value="camera2">Overlay 2</option>
+            <option value="camera3">Overlay 3</option>
+        </select>
+    </div>
+    <div style="direction: ltr;">
+        <label for="upload">Select Video from Gallery:</label>
+        <input type="file" id="upload" accept="video/*">
+    </div>
+    <canvas id="canvas"></canvas>
+    <button id="download">Download Full Video</button>
+    <button id="downloadShort">Download First 3 Seconds</button>
+</div>
+<script>
+const uploadInput = document.getElementById('upload');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const downloadButton = document.getElementById('download');
+const downloadShortButton = document.getElementById('downloadShort');
+const overlaySelection = document.getElementById('overlaySelection');
+
+const overlayImages = {
+    camera1: "https://sevdafjsh.neocities.org/img/other/Png%20Camera%201.png",
+    camera2: "https://sevdafjsh.neocities.org/img/other/Png%20Camera%202.png",
+    camera3: "https://sevdafjsh.neocities.org/img/other/Png%20Camera%203.png"
+};
+
+let currentVideo = null; // Store the uploaded video
+let videoElement = null;
+
+function loadOverlayImage(selectedOverlay, callback) {
+    const overlayImage = new Image();
+    overlayImage.src = overlayImages[selectedOverlay];
+    overlayImage.onload = () => {
+        canvas.width = overlayImage.width;
+        canvas.height = overlayImage.height;
+        callback(overlayImage);
+    };
+}
+
+function processVideoFrame(overlayImage, selectedOverlay) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let targetWidth, targetHeight, offsetX, offsetY;
+
+    if (selectedOverlay === 'camera1') {
+        targetWidth = 524;
+        targetHeight = 400;
+        offsetX = 62;
+        offsetY = 106;
+    } else if (selectedOverlay === 'camera2') {
+        targetWidth = 390;
+        targetHeight = 296;
+        offsetX = 46;
+        offsetY = 154;
+    } else if (selectedOverlay === 'camera3') {
+        targetWidth = 530;
+        targetHeight = 400;
+        offsetX = 58;
+        offsetY = 107.5;
+    }
+
+    // Draw the video frame
+    ctx.drawImage(videoElement, offsetX, offsetY, targetWidth, targetHeight);
+    // Draw the overlay image
+    ctx.drawImage(overlayImage, 0, 0, overlayImage.width, overlayImage.height);
+}
+
+function updateOverlay() {
+    const selectedOverlay = overlaySelection.value;
+    if (currentVideo) {
+        loadOverlayImage(selectedOverlay, (overlayImage) => {
+            function renderFrame() {
+                if (!videoElement.paused && !videoElement.ended) {
+                    processVideoFrame(overlayImage, selectedOverlay);
+                    requestAnimationFrame(renderFrame); // Keep updating the frame
+                }
+            }
+            renderFrame();
+        });
+    }
+}
+
+uploadInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const url = URL.createObjectURL(file);
+        videoElement = document.createElement('video');
+        videoElement.src = url;
+        videoElement.autoplay = true;
+        videoElement.loop = true;
+        videoElement.muted = true;  // Mute video to disable sound
+
+        // Once the video is loaded, set canvas dimensions and start processing
+        videoElement.onloadeddata = () => {
+            currentVideo = videoElement;
+            updateOverlay();
+        };
+
+        // Start video playback when it is ready
+        videoElement.play();
+    }
+});
+
+overlaySelection.addEventListener('change', updateOverlay);
+
+downloadButton.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'video-overlay.webm';
+
+    // Create a stream from the canvas and save it
+    const stream = canvas.captureStream(30); // 30 FPS
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    const chunks = [];
+
+    recorder.ondataavailable = (event) => chunks.push(event.data);
+    recorder.onstop = () => {
+        const videoBlob = new Blob(chunks, { type: 'video/webm' });
+        const videoURL = URL.createObjectURL(videoBlob);
+        link.href = videoURL;
+        link.click();
+    };
+
+    recorder.start();
+    setTimeout(() => recorder.stop(), currentVideo.duration * 1000); // Stop after video duration
+});
+
+downloadShortButton.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'video-overlay-short.webm';
+
+    // Create a stream from the canvas and save it
+    const stream = canvas.captureStream(30); // 30 FPS
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    const chunks = [];
+
+    recorder.ondataavailable = (event) => chunks.push(event.data);
+    recorder.onstop = () => {
+        const videoBlob = new Blob(chunks, { type: 'video/webm' });
+        const videoURL = URL.createObjectURL(videoBlob);
+        link.href = videoURL;
+        link.click();
+    };
+
+    recorder.start();
+    setTimeout(() => recorder.stop(), 3000); // Stop after 3 seconds
+});
+</script>
+</body>
+</html>
